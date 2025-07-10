@@ -26,10 +26,14 @@ if [ -z "$INVITE_CODE" ]; then
 fi
 
 echo ""
-echo "🚀 Запускаем новый контейнер с invite кодом..."
+echo "🚀 Запускаем новый контейнер с invite кодом и пробросом портов..."
+echo "🌐 Порты: 80 (HTTP) и 443 (HTTPS) будут доступны извне"
 
-# Запускаем новый контейнер
-docker run -d --name popnode --restart unless-stopped -e POP_INVITE_CODE="$INVITE_CODE" popnode sh -c "rm -f .pop.lock 2>/dev/null; ./pop"
+# Запускаем новый контейнер с пробросом портов
+docker run -d --name popnode --restart unless-stopped \
+    -p 80:80 -p 443:443 \
+    -e POP_INVITE_CODE="$INVITE_CODE" \
+    popnode sh -c "rm -f .pop.lock 2>/dev/null; ./pop"
 
 if [ $? -eq 0 ]; then
     echo "✅ Контейнер успешно запущен!"
@@ -41,12 +45,38 @@ if [ $? -eq 0 ]; then
     # Проверяем статус
     if docker ps | grep -q popnode; then
         echo "🎉 Контейнер работает!"
+        
+        # Показываем информацию о портах
+        echo ""
+        echo "🔌 Проброшенные порты:"
+        docker port popnode
+        
         echo ""
         echo "📊 Последние логи:"
         docker logs popnode --tail 10
+        
         echo ""
-        echo "🔍 Для проверки работы выполните:"
-        echo "docker exec popnode curl -sk https://localhost/"
+        echo "🔍 Проверка работы:"
+        echo "  Внутри контейнера: docker exec popnode curl -sk https://localhost/"
+        echo "  Снаружи (HTTP):    curl -s http://localhost/"
+        echo "  Снаружи (HTTPS):   curl -sk https://localhost/"
+        
+        # Проверяем доступность снаружи
+        echo ""
+        echo "🌐 Проверяем доступность снаружи..."
+        
+        if curl -s --connect-timeout 3 http://localhost/ >/dev/null 2>&1; then
+            echo "✅ HTTP (порт 80) доступен снаружи"
+        else
+            echo "❌ HTTP (порт 80) не доступен снаружи"
+        fi
+        
+        if curl -sk --connect-timeout 3 https://localhost/ >/dev/null 2>&1; then
+            echo "✅ HTTPS (порт 443) доступен снаружи"
+        else
+            echo "❌ HTTPS (порт 443) не доступен снаружи"
+        fi
+        
     else
         echo "❌ Контейнер не работает. Логи:"
         docker logs popnode --tail 20
@@ -55,3 +85,6 @@ else
     echo "❌ Ошибка при запуске контейнера!"
     exit 1
 fi
+
+echo ""
+echo "🎯 Готово! Ваша CDN нода теперь доступна извне на портах 80 и 443"
