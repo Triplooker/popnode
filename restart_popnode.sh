@@ -14,13 +14,13 @@ if docker ps -a | grep -q popnode; then
     sleep 2
     
     # Убиваем старый процесс и запускаем новый
-    docker exec popnode sh -c "pkill -f './pop' 2>/dev/null || true; rm -f .pop.lock 2>/dev/null || true; nohup ./pop > /dev/null 2>&1 &" > /dev/null 2>&1
+    docker exec popnode sh -c "pkill -f './pop' 2>/dev/null || true; rm -f .pop.lock 2>/dev/null || true; nohup ./pop >/dev/null 2>&1 &" > /dev/null 2>&1
     
-    echo "⏳ Ожидание инициализации (10 секунд)..."
-    sleep 10
+    echo "⏳ Ожидание инициализации (15 секунд)..."
+    sleep 15
     
     # Получаем POP ID
-    POP_ID=$(docker exec popnode curl -sk https://localhost/state 2>/dev/null | grep -o '"pop_id":"[^"]*"' | cut -d'"' -f4)
+    POP_ID=$(docker exec popnode curl -sk https://localhost/state 2>/dev/null | grep -o '\"pop_id\":\"[^\"]*\"' | cut -d'\"' -f4)
     
     if [ ! -z "$POP_ID" ] && [ "$POP_ID" != "null" ]; then
         echo "✅ Контейнер перезапущен успешно!"
@@ -28,7 +28,7 @@ if docker ps -a | grep -q popnode; then
         echo "📈 ДАШБОРД: https://dashboard.testnet.pipe.network/node/$POP_ID"
     else
         echo "⚠️  Не удалось получить POP ID. Логи:"
-        docker logs popnode --tail 5
+        docker logs popnode --tail 10
     fi
     
     exit 0
@@ -59,7 +59,7 @@ if [ $? -eq 0 ]; then
     sleep 15
     
     # Получаем POP ID
-    POP_ID=$(docker exec popnode curl -sk https://localhost/state 2>/dev/null | grep -o '"pop_id":"[^"]*"' | cut -d'"' -f4)
+    POP_ID=$(docker exec popnode curl -sk https://localhost/state 2>/dev/null | grep -o '\"pop_id\":\"[^\"]*\"' | cut -d'\"' -f4)
     
     if [ ! -z "$POP_ID" ] && [ "$POP_ID" != "null" ]; then
         echo "🎯 POP ID: $POP_ID"
@@ -67,7 +67,7 @@ if [ $? -eq 0 ]; then
         echo "💡 При следующем перезапуске POP ID сохранится!"
     else
         echo "⚠️  Не удалось получить POP ID. Логи:"
-        docker logs popnode --tail 5
+        docker logs popnode --tail 10
     fi
 else
     echo "❌ Ошибка при создании контейнера!"
