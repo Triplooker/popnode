@@ -12,8 +12,11 @@ if [ ! -d "$DATA_DIR" ]; then
     mkdir -p "$DATA_DIR"
 fi
 
-# Копируем текущие данные контейнера в DATA_DIR
-docker cp popnode:/app/data $DATA_DIR
+# Копируем текущие данные контейнера в DATA_DIR, если существует
+if docker ps -a | grep -q popnode; then
+    echo "📦 Копируем данные контейнера..."
+    docker cp popnode:/app/data $DATA_DIR 2>/dev/null || echo "⚠️ Нет файла /app/data для копирования."
+fi
 
 # Удаляем старый контейнер
 echo "🗑 Удаляем старый контейнер..."
@@ -28,7 +31,7 @@ if [ -z "$INVITE_CODE" ]; then
     exit 1
 fi
 
-# Создаем и запускаем новый контейнер с использованием сохраненных данных
+# Создаем и запускаем новый контейнер
 echo "🚀 Создаем новый контейнер..."
 
 docker run -d --name popnode --restart unless-stopped \
@@ -43,7 +46,8 @@ if [ $? -eq 0 ]; then
     sleep 15
 
     # Получаем POP ID
-    POP_ID=$(docker exec popnode curl -sk https://localhost/state 2>/dev/null | grep -o '\"pop_id\":\"[^\"]*\"' | cut -d'\"' -f4)
+    POP_INFO=$(docker exec popnode curl -sk https://localhost/state 2>/dev/null)
+    POP_ID=$(echo $POP_INFO | grep -o '"pop_id":"[^"]*"' | cut -d':' -f2 | tr -d '"')
 
     if [ ! -z "$POP_ID" ] && [ "$POP_ID" != "null" ]; then
         echo "🎯 POP ID: $POP_ID"
