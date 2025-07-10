@@ -13,8 +13,8 @@ if docker ps -a | grep -q popnode; then
     docker start popnode > /dev/null 2>&1
     sleep 2
     
-    # Убиваем старый процесс и запускаем новый
-    docker exec popnode sh -c "pkill -f './pop' 2>/dev/null || true; rm -f .pop.lock 2>/dev/null || true; nohup ./pop >/dev/null 2>&1 &" > /dev/null 2>&1
+    # Принудительно убиваем все процессы POP и очищаем файл блокировки
+    docker exec popnode sh -c "pkill -9 -f './pop' 2>/dev/null || true; rm -f .pop.lock 2>/dev/null || true; nohup ./pop >/dev/null 2>&1 &" > /dev/null 2>&1
     
     echo "⏳ Ожидание инициализации (15 секунд)..."
     sleep 15
